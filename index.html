@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>품질 일정 달력</title>
+
+<style>
+body{font-family:"Segoe UI";margin:10px;background:#f4f6f9;}
+
+
+/* ✅추가 (날짜 표시 스타일) */
+#todayDate{
+ text-align:right;
+ font-weight:bold;
+ margin-bottom:5px;
+}
+
+.header{
+ display:flex;
+ justify-content:space-between;
+ align-items:flex-start;
+ position:relative;
+ margin-bottom:30px;
+}
+
+#title{
+ position:absolute;
+ left:50%;
+ transform:translateX(-50%);
+ font-size:32px;
+}
+
+/* ✅ 카드형 스타일 */
+.summary-card{
+ margin-bottom:10px;
+ padding:8px;
+ border-radius:10px;
+}
+
+.card-title{
+ font-weight:bold;
+ margin-bottom:5px;
+}
+
+.card-check{
+ background:#dbeafe;
+ border-left:5px solid #2563eb;
+}
+.card-leave{
+ background:#dcfce7;
+ border-left:5px solid #16a34a;
+}
+.card-half{
+ background:#fef9c3;
+ border-left:5px solid #eab308;
+}
+.card-etc{
+ background:#f1f5f9;
+ border-left:5px solid #64748b;
+}
+
+/* ✅ 기존 CSS도 반드시 안으로 이동 */
+#legend{display:flex;gap:6px;flex-wrap:wrap;}
+.legend-item{padding:3px 6px;border-radius:6px;color:white;font-size:12px;}
+
+#summaryTable{display:flex;gap:6px;margin-bottom:6px;}
+.summary-item{padding:4px 8px;border-radius:6px;color:#fff;font-size:16px;font-weight:bold;}
+
+#noticeBox{background:#fff;padding:8px;border-radius:8px;margin-bottom:6px;}
+
+.controls{
+ text-align:center;
+ margin:0px 0;
+}
+
+/* ✅ 요일 디자인 */
+.day-header{
+ text-align:center;
+ font-weight:bold;
+ background:#f1f5f9;
+ border-radius:8px;
+ padding:6px 0;
+ font-size:20px;
+}
+.day-sun{background:#fee2e2;color:#dc2626;}
+.day-sat{background:#e0f2fe;color:#2563eb;}
+
+.calendar{
+ display:grid;
+ grid-template-columns:
+ 50px 0.7fr repeat(5, 1.3fr) 0.7fr;
+ gap:6px;
+}
+
+.cell{
+ background:white;
+ border:1px solid #ddd;
+ border-radius:8px;
+ padding:6px;
+ min-height:120px;
+ cursor:pointer;
+}
+
+.cell div{
+ white-space:nowrap;
+ overflow:hidden;
+ text-overflow:ellipsis;
+}
+.cell div br{display:none;}
+
+.sunday-bg{background:#fee2e2;}
+.saturday-bg{background:#e0f2fe;}
+
+.sun{color:#dc2626;font-size:12px;}
+.sat{color:#2563eb;font-size:12px;}
+.holiday-date{color:#dc2626;font-weight:bold;}
+
+.week-box{
+ text-align:center;
+ font-weight:bold;
+ background:#eef2ff;
+ cursor:pointer;
+}
+
+.category{margin-top:5px;}
+.leave{background:#dcfce7;padding:3px;border-radius:4px;}
+.half{background:#fff3cd;padding:3px;border-radius:4px;}
+#popup{
+ position:absolute;
+ background:white;
+ padding:12px;
+ border-radius:10px;
+ display:none;
+ width:320px;
+ border:1px solid #ccc;
+ box-shadow:0 5px 15px rgba(0,0,0,0.2);
+ z-index:999;
+}
+
+/* ✅ ✅ ✅ 여기 바로 추가 ✅ ✅ ✅ */
+#addPopup, #managePopup{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%);
+
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  width:320px;
+
+  display:none;   /* ✅ 핵심 */
+  z-index:1000;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+ <div id="legend"></div>
+ <h2 id="title"></h2>
+ <div id="summaryTable"></div>
+</div>
+
+<!-- ✅추가 (오늘 날짜 표시 영역) -->
+<div id="todayDate"></div>
+
+<div class="controls">
+ <button onclick="prevMonth()">◀ 이전</button>
+ <button onclick="nextMonth()">다음 ▶</button>
+ <button onclick="downloadPDF()">📄 PDF</button>
+<button onclick="openAddPopup()">➕ 일정 추가</button>
+</div>
+
+<div id="noticeBox" style="display:flex; align-items:center; gap:10px; background:#fff; padding:8px; border-radius:8px; margin-bottom:6px;">
+
+  <!-- ✅ 공지 텍스트 (추가) -->
+  <span onclick="addNotice()" style="cursor:pointer;">
+    📢 공지
+  </span>
+
+  <!-- ✅ 버튼 하나만 남김 -->
+  <button id="noticeBtn"
+    onclick="event.stopPropagation(); toggleNotice();">
+    ▼
+  </button>
+
+</div>
+
+<!-- ✅ 공지 내용은 밖으로 빼기 -->
+<div id="noticeContent" style="display:none;"></div>
+
+<!-- ✅ ✅ CDN 정상 (이것만 남김) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+
+/* ✅ 여기 바로 아래에 추가 */
+const legend = document.getElementById("legend");
+const summaryTable = document.getElementById("summaryTable");
+const calendar = document.getElementById("calendar");
+const title = document.getElementById("title");
+const popup = document.getElementById("popup");
+const popupDate = document.getElementById("popupDate");
+const popupContent = document.getElementById("popupContent");
+
+/* ✅추가 (오늘 날짜 출력 함수) */
+function renderToday(){
+ let t = new Date();
+ let y = t.getFullYear();
+ let m = String(t.getMonth()+1).padStart(2,'0');
+ let d = String(t.getDate()).padStart(2,'0');
+ document.getElementById("todayDate").innerText = `${y}-${m}-${d}`;
+}
+
+/* 공지 */
+function renderNotice(){
+ let key=`${currentYear}-${String(currentMonth+1).padStart(2,'0')}-00`;
+ let list=events.filter(e=>e.date===key);
+const noticeContent = document.getElementById("noticeContent"); // ✅ 이 줄 추가
+ noticeContent.innerHTML=list.map(e=>{
+  let t=e.text.replace(/\r/g,'').replace(/\n/g,"<br>");
+  return `<div>• ${t}</div>`;
+ }).join("");
+}
+
+/* 색상 */
+const baseColors={BL:"#2563eb",QXP:"#7c3aed"};
+const dynamicColors={};
+
+function getPrefix(t){
+ let m=t.match(/^[A-Za-z]{1,3}/);
+ return m?m[0].toUpperCase():"ETC";
+}
+
+function getColor(p){
+ if(baseColors[p]) return baseColors[p];
+ if(dynamicColors[p]) return dynamicColors[p];
+ let h=0;
+ for(let i=0;i<p.length;i++){h=p.charCodeAt(i)+((h<<5)-h);}
+ let c=`hsl(${Math.abs(h%360)},75%,38%)`;
+ dynamicColors[p]=c;
+ return c;
+}
+
+/* 범례 */
+function renderLegend(){
+ let all={...baseColors,...dynamicColors};
+ legend.innerHTML=Object.keys(all).map(k=>
+ `<div class="legend-item" style="background:${all[k]}">${k}</div>`
+ ).join("");
+}
+
+/* 집계 */
+function renderSummary(){
+ let key=`${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+ let ins=0,leave=0,half=0;
+
+ events.forEach(e=>{
+  if(!e.date.startsWith(key)) return;
+  if(e.text.includes("검수")) ins++;
+  else if(e.text.includes("연차")) leave++;
+  else if(e.text.includes("반차")) half++;
+ });
+
+ summaryTable.innerHTML=`
+ <div class="summary-item" style="background:#2563eb">검수 ${ins}</div>
+ <div class="summary-item" style="background:#16a34a">연차 ${leave}</div>
+ <div class="summary-item" style="background:#eab308">반차 ${half}</div>
+ `;
+}
+
+/* PDF */
+function downloadPDF(){
+ const { jsPDF } = window.jspdf;
+ html2canvas(document.body).then(canvas=>{
+  const img=canvas.toDataURL("image/png");
+  const pdf=new jsPDF('landscape');
+
+  const pw=pdf.internal.pageSize.getWidth();
+  const iw=pw*0.95;
+  const ih=(canvas.height*iw)/canvas.width;
+  const x=(pw-iw)/2;
+
+  pdf.addImage(img,'PNG',x,10,iw,ih);
+  pdf.save("calendar.pdf");
+ });
+}
+
+/* 주차 팝업 */
+function showWeekSummary(start,el){
+
+ let check="", leave="", half="", etc="";
+
+ for(let i=0;i<7;i++){
+  let d=new Date(start);
+  d.setDate(start.getDate()+i);
+
+  let full=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  let short=full.substring(5);
+
+  let list=events.filter(e=>e.date===full);
+
+  list.forEach(e=>{
+    let t=e.text;
+
+    if(t.includes("검수")){
+      check+=`<div>• ${short} ${t}</div>`;
+    }
+    else if(t.includes("연차")){
+      let name=t.replace("연차","").split("/")[0];
+      leave+=`<div>• ${short} ${name}</div>`;
+    }
+    else if(t.includes("반차")){
+      let name=t.replace("반차","").split("/")[0];
+      half+=`<div>• ${short} ${name}</div>`;
+    }
+    else{
+      etc+=`<div>• ${short} ${t}</div>`;
+    }
+  });
+ }
+
+ popup.style.display="block";
+ popupDate.innerText=getWeekNumber(start)+"주 요약";
+
+ popupContent.innerHTML=`
+
+ <div class="summary-card card-check">
+   <div class="card-title">검수</div>
+   ${check || "없음"}
+ </div>
+
+ <div class="summary-card card-leave">
+   <div class="card-title">연차</div>
+   ${leave || "없음"}
+ </div>
+
+ <div class="summary-card card-half">
+   <div class="card-title">반차</div>
+   ${half || "없음"}
+ </div>
+
+ <div class="summary-card card-etc">
+   <div class="card-title">기타</div>
+   ${etc || "없음"}
+ </div>
+ `;
+
+ let r=el.getBoundingClientRect();
+ popup.style.top=(window.scrollY+r.top)+"px";
+ popup.style.left=(window.scrollX+r.right+10)+"px";
+}
+/* ESC */
+document.addEventListener("keydown",e=>{
+ if(e.key==="Escape") popup.style.display="none";
+});
+
+function closePopup(){popup.style.display="none";}
+
+/* CSV */
+function parseCSV(text){
+ let lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+
+ return lines.slice(1).map(line => {
+  let parts = line.split(",");
+
+  if(parts.length < 3) return null;
+
+
+return {
+  id: parts[0],
+  date: parts[1],
+  text: parts.slice(2).join(",").replace(/^"|"$/g, '')
+};
+ 
+ }).filter(Boolean);
+}
+
+let events=[],currentYear,currentMonth;
+
+function loadData(){
+
+ const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS5Pdc5w8IByuwLPGSJvXwKuynq0jDjsu2LQzkteBbcWGC4jKWj6TvOQMBOFDePoouUUKwff9eqJ59k/pub?output=csv&v=" + new Date().getTime();
+
+ fetch(sheetURL)
+ .then(r => r.text())
+ .then(t => {
+  events = parseCSV(t);
+  renderCalendar();
+ })
+ .catch(e => {
+  console.error("시트 로드 실패:", e);
+  renderCalendar();
+ });
+
+}
+
+/* ✅ window.onload 부분 (추가됨) */
+window.onload=function(){
+ let t=new Date();
+ currentYear=t.getFullYear();
+ currentMonth=t.getMonth();
+ loadData();
+
+ renderToday(); // ✅추가 (이게 핵심)
+};
+
+function toggleNotice(){
+ const content = document.getElementById("noticeContent");
+ const btn = document.getElementById("noticeBtn");
+
+ if(content.style.display === "none"){
+   content.style.display = "block";
+   btn.innerText = "▲";
+ }else{
+   content.style.display = "none";
+   btn.innerText = "▼";
+ }
+}
+
+
+/* 달력 */
+function renderCalendar(){
+
+ renderLegend();
+ renderSummary();
+ renderNotice();
+
+ calendar.innerHTML="";
+
+ const days=["일","월","화","수","목","금","토"];
+ calendar.appendChild(document.createElement("div"));
+
+ /* ✅ 요일 디자인 적용 */
+ days.forEach((d,i)=>{
+  let el=document.createElement("div");
+  el.className="day-header";
+  if(i===0) el.classList.add("day-sun");
+  else if(i===6) el.classList.add("day-sat");
+  el.innerText=d;
+  calendar.appendChild(el);
+ });
+
+ let firstDay=new Date(currentYear,currentMonth,1).getDay();
+ let lastDate=new Date(currentYear,currentMonth+1,0).getDate();
+
+ title.innerText=`${currentYear}년 ${currentMonth+1}월`;
+
+ let date=1;
+
+ for(let i=0;date<=lastDate;i++){
+
+  let ws=new Date(currentYear,currentMonth,date);
+  ws.setDate(date-ws.getDay());
+
+  let wc=document.createElement("div");
+  wc.className="week-box";
+  wc.innerText=getWeekNumber(ws)+"주";
+  wc.onclick=()=>showWeekSummary(ws,wc);
+  calendar.appendChild(wc);
+
+  for(let j=0;j<7;j++){
+
+   if((i===0&&j<firstDay)||date>lastDate){
+    calendar.appendChild(document.createElement("div"));
+    continue;
+   }
+
+   let full=`${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
+   let dayEvents=events.filter(e=>e.date===full);
+
+   let cell=document.createElement("div");
+   cell.className="cell";
+
+   if(j===0) cell.classList.add("sunday-bg");
+   if(j===6) cell.classList.add("saturday-bg");
+
+   let isHoliday = dayEvents.some(e=>{
+     let t=e.text;
+     return !(t.includes("검수")||t.includes("연차")||t.includes("반차"));
+   });
+
+   let dc=isHoliday?"holiday-date":(j===0?"sun":(j===6?"sat":""));
+   cell.innerHTML=`<b class="${dc}">${date}</b>`;
+
+   let ins="",leave="",half="";
+
+dayEvents.forEach(e=>{
+  let t = e.text;
+let safeText = encodeURIComponent(t);  //✅ 핵심
+  // ✅ 이동 이벤트 추가 (핵심)
+let move = `onclick="openManagePopup('${e.id}','${full}','${safeText}')" style="cursor:pointer;"`;
+
+
+  if(t.includes("검수")){
+    let c=getColor(getPrefix(t));
+    ins += `<div style="background:${c};color:white;" ${move}>
+      • ${t}
+    </div>`;
+  }
+  else if(t.includes("연차")){
+    leave += `<span ${move}>
+      • ${t.replace("연차","").split("/")[0]}
+    </span><br>`;
+  }
+  else if(t.includes("반차")){
+    half += `<span ${move}>
+      • ${t.replace("반차","").split("/")[0]}
+    </span><br>`;
+  }
+  else{
+    cell.innerHTML += `<div ${move}>
+      • ${t}
+    </div>`;
+  }
+});
+
+   if(ins) cell.innerHTML+=`<div class="category"><b>검수</b>${ins}</div>`;
+   if(leave) cell.innerHTML+=`<div class="category leave"><b>연차</b><br>${leave}</div>`;
+   if(half) cell.innerHTML+=`<div class="category half"><b>반차</b><br>${half}</div>`;
+
+   calendar.appendChild(cell);
+   date++;
+  }
+ }
+}
+
+function getWeekNumber(d){
+ d=new Date(d);
+ d.setDate(d.getDate()+3-(d.getDay()+6)%7);
+ const y1=new Date(d.getFullYear(),0,4);
+ return 1+Math.round(((d-y1)/86400000-3+(y1.getDay()+6)%7)/7);
+}
+
+function prevMonth(){currentMonth--;if(currentMonth<0){currentMonth=11;currentYear--;}renderCalendar();}
+function nextMonth(){currentMonth++;if(currentMonth>11){currentMonth=0;currentYear++;}renderCalendar();}
+
+const API_URL = "https://script.google.com/macros/s/AKfycbxJQ1oysNKSmR5JFmDE5TwmOvCHYNOyfIgQTdupbqNSZn9obaiSyb6AJjfu1-h9GG6BFQ/exec";
+function addNotice(){
+  let text = prompt("공지 내용 입력");
+  if(!text) return;
+
+  let date = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-00`;
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "add",
+      date: date,
+      text: text
+    })
+  })
+  .then(()=>{
+    alert("공지 등록 ✅");
+    loadData();
+  })
+  .catch(()=>{
+    alert("실패 ❌");
+  });
+}
+
+
+function addEvent(){
+  let date = prompt("날짜 입력 (YYYY-MM-DD)");
+  if(!date) return;
+
+  let text = prompt("내용 입력");
+  if(!text) return;
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "add",
+      date: date,
+      text: text
+    })
+  })
+  .then(res => res.json())
+  .then(() => {
+    alert("저장 완료 ✅");
+    loadData();
+  })
+  .catch(err => {
+    alert("저장 실패 ❌");
+    console.error(err);
+  });
+}
+
+
+// ✅ ✅ ✅ 여기부터 추가 (중요)
+function deleteEvent(id){
+
+  if(!confirm("삭제하시겠습니까?")) return;
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action:"delete",
+      id:id
+    })
+  })
+  .then(()=> loadData());
+}
+
+function updateEvent(id, oldDate, oldText){
+
+  let decodedText = decodeURIComponent(oldText);   // ✅ 복원
+
+  let date = prompt("날짜 수정", oldDate);
+  if(!date) return;
+
+  let text = prompt("내용 수정", decodedText);   // ✅ 복원된 값 사용
+  if(!text) return;
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action:"update",
+      id:id,
+      date:date,
+      text:text
+    })
+  })
+  .then(()=> loadData());
+}
+
+ function openAddPopup(){
+  document.getElementById("addPopup").style.display = "block";
+document.getElementById("overlay").style.display = "block"; //
+}
+
+function closeAddPopup(){
+  document.getElementById("addPopup").style.display = "none";
+document.getElementById("overlay").style.display = "none";
+}
+
+// ✅ 일정 추가
+function submitEvent(){
+
+  let date = document.getElementById("addDate").value;
+  let text = document.getElementById("addText").value;
+
+  if(!date || !text){
+    alert("값 입력하세요");
+    return;
+  }
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "add",
+      date: date,
+      text: text
+    })
+  })
+  .then(()=>{
+    alert("저장 완료 ✅");
+    closeAddPopup();
+    loadData();
+  });
+}
+
+// ✅ 관리 팝업 열기
+function openManagePopup(id, date, text){
+
+  let decoded = decodeURIComponent(text);
+
+  document.getElementById("manageId").value = id;
+  document.getElementById("manageDate").value = date;
+  document.getElementById("manageText").value = decoded;
+
+  document.getElementById("managePopup").style.display = "block";
+document.getElementById("overlay").style.display = "block"; // ✅ 추가
+}
+
+// ✅ 관리 팝업 닫기
+function closeManagePopup(){
+  document.getElementById("managePopup").style.display = "none";
+document.getElementById("overlay").style.display = "none";
+}
+
+// ✅ 수정
+function saveEvent(){
+
+  let id = document.getElementById("manageId").value;
+  let date = document.getElementById("manageDate").value;
+  let text = document.getElementById("manageText").value;
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action:"update",
+      id:id,
+      date:date,
+      text:text
+    })
+  })
+  .then(()=>{
+    alert("수정 완료 ✅");
+    closeManagePopup();
+    loadData();
+  });
+}
+
+// ✅ 삭제
+function deleteFromPopup(){
+
+  let id = document.getElementById("manageId").value;
+
+  if(!confirm("삭제하시겠습니까?")) return;
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action:"delete",
+      id:id
+    })
+  })
+  .then(()=>{
+    alert("삭제 완료 ✅");
+    closeManagePopup();
+    loadData();
+  });
+}
+
+// ✅ 이동
+function moveEventFromPopup(){
+
+  let id = document.getElementById("manageId").value;
+  let currentDate = document.getElementById("manageDate").value;
+  let text = document.getElementById("manageText").value;
+
+  let newDate = prompt("이동할 날짜 입력", currentDate);
+  if(!newDate) return;
+
+  fetch(API_URL, {
+    method:"POST",
+    body: JSON.stringify({
+      action:"update",
+      id:id,
+      date:newDate,
+      text:text
+    })
+  })
+  .then(()=>{
+    alert("이동 완료 ✅");
+    closeManagePopup();
+    loadData();
+  });
+}
+// ✅ 바깥 클릭 시 닫기 (최종 완성 버전)
+document.addEventListener("click", function(e){
+
+  const managePopup = document.getElementById("managePopup");
+  const addPopup = document.getElementById("addPopup");
+const overlay = document.getElementById("overlay");
+
+if(e.target === overlay){
+  closeManagePopup();
+  closeAddPopup();
+}
+  // ✅ 관리 팝업
+  if(
+    managePopup.style.display === "block" &&
+    !managePopup.contains(e.target) &&
+    !e.target.closest("[onclick*='openManagePopup']")
+  ){
+    closeManagePopup();
+  }
+
+  // ✅ 일정 추가 팝업
+  if(
+    addPopup.style.display === "block" &&
+    !addPopup.contains(e.target) &&
+    !e.target.closest("[onclick*='openAddPopup']")
+  ){
+    closeAddPopup();
+  }
+
+});
+
+</script>
+
+<!-- ✅ 1. 어두운 배경 (overlay) -->
+<div id="overlay" style="
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.5);
+  display:none;
+  z-index:999;
+"></div>
+
+<!-- ✅ 2. 일정 추가 팝업 -->
+<div id="addPopup">
+  <h3>➕ 일정 추가</h3>
+
+  <label>날짜</label><br>
+  <input id="addDate" type="date" style="width:100%;"><br><br>
+
+  <label>내용</label><br>
+  <input id="addText" placeholder="내용 입력" style="width:100%;"><br><br>
+
+  <div style="text-align:right;">
+    <button onclick="submitEvent()">저장</button>
+    <button onclick="closeAddPopup()">닫기</button>
+  </div>
+</div>
+
+<!-- ✅ 3. 일정 관리 팝업 -->
+<div id="managePopup">
+  <h3>📌 일정 관리</h3>
+
+  <input id="manageId" type="hidden">
+
+  <label>날짜</label><br>
+  <input id="manageDate" style="width:100%;"><br><br>
+
+  <label>내용</label><br>
+  <input id="manageText" style="width:100%;"><br><br>
+
+  <div style="display:flex; gap:5px; flex-wrap:wrap;">
+    <button onclick="saveEvent()">수정</button>
+    <button onclick="moveEventFromPopup()">이동</button>
+    <button onclick="deleteFromPopup()">삭제</button>
+    <button onclick="closeManagePopup()">닫기</button>
+  </div>
+</div>
+
+</body>
+</html>
