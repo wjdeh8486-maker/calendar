@@ -406,6 +406,7 @@ window.onload=function(){
  loadData();
 
  renderToday(); // ✅추가 (이게 핵심)
+ setInterval(loadData, 60000);
 };
 
 function toggleNotice(){
