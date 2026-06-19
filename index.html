@@ -764,6 +764,11 @@ async function uploadFile(file){
   const reader = new FileReader();
 
   return new Promise((resolve) => {
+async function uploadFile(file){
+
+  const reader = new FileReader();
+
+  return new Promise((resolve) => {
 
     reader.onload = function(){
 
@@ -776,30 +781,31 @@ async function uploadFile(file){
         })
       })
       .then(res=>res.json())
-      
-.then(data=>{
-  console.log("업로드 결과:", data);
+      .then(data=>{
+        console.log("업로드 결과:", data);
 
-  if(!data.url){
-    alert("❌ 업로드 실패 (url 없음)");
-    resolve("");   // 👉 에러 막고 계속 진행
-    return;
-  }
+        if(!data.url){
+          alert("❌ 업로드 실패 (url 없음)");
+          resolve("");
+          return;
+        }
 
-  resolve(data.url);
-})
-.catch(err=>{
-  console.error("업로드 에러:", err);
-  alert("❌ 업로드 실패");
-  resolve("");
-});
+        resolve(data.url);
+      })
+      .catch(err=>{
+        console.error("업로드 에러:", err);
+        alert("❌ 업로드 실패");
+        resolve("");
+      });
 
+    };   // ✅ onload 닫기
 
+    // ✅ ✅ ✅ 반드시 여기 있어야 함
     reader.readAsDataURL(file);
 
   });
 }
-
+    
 // ✅ 삭제
 function deleteFromPopup(){
 
