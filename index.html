@@ -759,11 +759,18 @@ fetch(API_URL, {
       fileUrl: finalFileUrl
     })
   })
-  .then(()=>{
-    alert("수정 완료 ✅");
-    closeManagePopup();
+ .then(()=>{
+  alert("수정 완료 ✅");
+  closeManagePopup();
+
+  // ✅ 바로 한번
+  loadData();
+
+  // ✅ ✅ 2초 뒤 한번 더 (핵심)
+  setTimeout(() => {
     loadData();
-  });
+  }, 2000);
+});
 }
 async function uploadFile(file){
 
