@@ -775,24 +775,32 @@ async function uploadFile(file){
          mimeType: file.type 
         })
       })
-      .then(res=>res.json())
-      .then(data=>{
-        console.log("업로드 결과:", data);
+      .then(res => res.text())
+.then(text => {
 
-        if(!data.url){
-          alert("❌ 업로드 실패 (url 없음)");
-          resolve("");
-          return;
-        }
+  console.log("응답원본:", text);
 
-        resolve(data.url);
-      })
-      .catch(err=>{
-        console.error("업로드 에러:", err);
-        alert("❌ 업로드 실패");
-        resolve("");
-      });
+  let data;
 
+  try{
+    data = JSON.parse(text);
+  }catch(e){
+    alert("❌ JSON 파싱 실패");
+    console.error(text);
+    resolve("");
+    return;
+  }
+
+  console.log("업로드 결과:", data);
+
+  if(!data.url){
+    alert("❌ 업로드 실패 (url 없음)");
+    resolve("");
+    return;
+  }
+
+  resolve(data.url);
+})
     };   // ✅ onload 닫기
 
     // ✅ ✅ ✅ 반드시 여기 있어야 함
