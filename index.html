@@ -370,11 +370,14 @@ function parseCSV(text){
   if(parts.length < 3) return null;
 
 
+
 return {
   id: parts[0],
   date: parts[1],
-  text: parts.slice(2).join(",").replace(/^"|"$/g, '')
+  text: parts[2],
+  fileUrl: parts[3] || ""
 };
+
  
  }).filter(Boolean);
 }
@@ -492,6 +495,17 @@ function renderCalendar(){
 dayEvents.forEach(e=>{
   let t = e.text;
 let safeText = encodeURIComponent(t);  //✅ 핵심
+ 
+// ✅ ✅ 파일 링크 생성 (여기 추가)
+let fileLink = "";
+if(e.fileUrl){
+  fileLink = `
+    <a href="${e.fileUrl}" target="_blank"
+       onclick="event.stopPropagation()"
+       style="margin-left:4px;text-decoration:none;">
+       📎
+    </a>`;
+}
   // ✅ 이동 이벤트 추가 (핵심)
 let move = `onclick="openManagePopup('${e.id}','${full}','${safeText}')" style="cursor:pointer;"`;
 
@@ -499,22 +513,26 @@ let move = `onclick="openManagePopup('${e.id}','${full}','${safeText}')" style="
   if(t.includes("검수")){
     let c=getColor(getPrefix(t));
     ins += `<div style="background:${c};color:white;" ${move}>
-      • ${t}
+      • ${t} ${fileLink}
     </div>`;
   }
   else if(t.includes("연차")){
-    leave += `<span ${move}>
-      • ${t.replace("연차","").split("/")[0]}
+    
+leave += `<span ${move}>
+  • ${t.replace("연차","").split("/")[0]} ${fileLink}
+
     </span><br>`;
   }
   else if(t.includes("반차")){
-    half += `<span ${move}>
-      • ${t.replace("반차","").split("/")[0]}
-    </span><br>`;
+   
+half += `<span ${move}>
+  • ${t.replace("반차","").split("/")[0]} ${fileLink}
+</span><br>`;
+
   }
   else{
     cell.innerHTML += `<div ${move}>
-      • ${t}
+      • ${t} ${fileLink}
     </div>`;
   }
 });
