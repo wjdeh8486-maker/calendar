@@ -709,8 +709,11 @@ async function saveEvent(){
   let text = document.getElementById("manageText").value;
   let file = document.getElementById("manageFile").files[0];
 
-  let fileUrl = "";
+console.log("파일 확인:", file);   // ✅ 추가
 
+let fileUrl = "";
+
+// ✅ 파일 있을 때만 체크
 if(file && file.size > 10 * 1024 * 1024){
   alert("파일은 10MB 이하만 가능합니다");
   return;
@@ -764,7 +767,12 @@ async function uploadFile(file){
         })
       })
       .then(res=>res.json())
-      .then(data=>resolve(data.url));
+      
+.then(data=>{
+  console.log("업로드 결과:", data);   // ✅ 추가
+  resolve(data.url);
+});
+
 
     };
 
