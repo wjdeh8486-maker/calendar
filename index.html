@@ -711,7 +711,7 @@ async function saveEvent(){
 
   let fileUrl = "";
 
-if(file.size > 10 * 1024 * 1024){
+if(file && file.size > 10 * 1024 * 1024){
   alert("파일은 10MB 이하만 가능합니다");
   return;
 }
