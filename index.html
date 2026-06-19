@@ -231,7 +231,7 @@ const baseColors={BL:"#2563eb",QXP:"#7c3aed"};
 const dynamicColors={};
 
 function getPrefix(t){
- t = t.replace(/^"/, '');
+ t = t.replace(/^"+|"+$/g, '').trim();
  let m=t.match(/^[A-Za-z]{1,3}/);
  return m?m[0].toUpperCase():"ETC";
 }
