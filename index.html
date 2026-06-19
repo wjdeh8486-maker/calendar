@@ -727,9 +727,18 @@ if(file && file.size > 10 * 1024 * 1024){
   }
 
   // ✅ ② 새 파일 업로드
+ try {
+
   if(file){
     fileUrl = await uploadFile(file);
   }
+
+} catch(e){
+  console.error("upload 중 오류:", e);
+  alert("파일 업로드 중 오류 발생");
+  return;
+}
+
 
   // ✅ ③ 최종 결정 (여기가 핵심)
   let finalFileUrl = fileUrl || existingUrl;
@@ -769,12 +778,22 @@ async function uploadFile(file){
       .then(res=>res.json())
       
 .then(data=>{
-  console.log("업로드 결과:", data);   // ✅ 추가
+  console.log("업로드 결과:", data);
+
+  if(!data.url){
+    alert("❌ 업로드 실패 (url 없음)");
+    resolve("");   // 👉 에러 막고 계속 진행
+    return;
+  }
+
   resolve(data.url);
+})
+.catch(err=>{
+  console.error("업로드 에러:", err);
+  alert("❌ 업로드 실패");
+  resolve("");
 });
 
-
-    };
 
     reader.readAsDataURL(file);
 
