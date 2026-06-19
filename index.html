@@ -702,25 +702,74 @@ document.getElementById("overlay").style.display = "none";
 }
 
 // ✅ 수정
-function saveEvent(){
+async function saveEvent(){
 
   let id = document.getElementById("manageId").value;
   let date = document.getElementById("manageDate").value;
   let text = document.getElementById("manageText").value;
+  let file = document.getElementById("manageFile").files[0];
+
+  let fileUrl = "";
+
+if(file.size > 10 * 1024 * 1024){
+  alert("파일은 10MB 이하만 가능합니다");
+  return;
+}
+
+  // ✅ ① 기존 파일 URL 먼저 구함
+  let existingUrl = "";
+  let event = events.find(e => e.id == id);
+  if(event){
+    existingUrl = event.fileUrl || "";
+  }
+
+  // ✅ ② 새 파일 업로드
+  if(file){
+    fileUrl = await uploadFile(file);
+  }
+
+  // ✅ ③ 최종 결정 (여기가 핵심)
+  let finalFileUrl = fileUrl || existingUrl;
 
   fetch(API_URL, {
     method: "POST",
     body: JSON.stringify({
-      action:"update",
-      id:id,
-      date:date,
-      text:text
+      action: "update",
+      id: id,
+      date: date,
+      text: text,
+      fileUrl: finalFileUrl
     })
   })
   .then(()=>{
     alert("수정 완료 ✅");
     closeManagePopup();
     loadData();
+  });
+}
+async function uploadFile(file){
+
+  const reader = new FileReader();
+
+  return new Promise((resolve) => {
+
+    reader.onload = function(){
+
+      fetch(API_URL, {
+        method:"POST",
+        body: JSON.stringify({
+          action:"upload",
+          fileName: file.name,
+          fileData: reader.result
+        })
+      })
+      .then(res=>res.json())
+      .then(data=>resolve(data.url));
+
+    };
+
+    reader.readAsDataURL(file);
+
   });
 }
 
@@ -842,6 +891,8 @@ if(e.target === overlay){
 
   <label>내용</label><br>
   <input id="manageText" style="width:100%;"><br><br>
+ <label>첨부파일</label><br>
+<input id="manageFile" type="file" style="width:100%;"><br><br>
 
   <div style="display:flex; gap:5px; flex-wrap:wrap;">
     <button onclick="saveEvent()">수정</button>
