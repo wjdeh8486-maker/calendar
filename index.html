@@ -742,9 +742,12 @@ if(file && file.size > 10 * 1024 * 1024){
   // ✅ ③ 최종 결정 (여기가 핵심)
   let finalFileUrl = fileUrl || existingUrl;
 
-  fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify({
+ 
+fetch(API_URL, {
+  method: "POST",
+  mode: "no-cors",   // ✅ 여기만 추가하면 됨
+  body: JSON.stringify({
+
       action: "update",
       id: id,
       date: date,
@@ -777,8 +780,7 @@ async function uploadFile(file){
         })
       })
       .then(() => {
-        // ✅ 응답 못 읽음 → 그냥 성공 처리
-        console.log("업로드 요청 완료");
+        console.log("업로드 완료");
         resolve("");
       })
       .catch(err => {
@@ -789,7 +791,7 @@ async function uploadFile(file){
 
     };
 
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(file);   // ✅ 이건 딱 1번만
 
   });
 }
