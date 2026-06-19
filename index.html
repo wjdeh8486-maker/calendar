@@ -190,6 +190,7 @@ body{font-family:"Segoe UI";margin:10px;background:#f4f6f9;}
 <!-- ✅ 공지 내용은 밖으로 빼기 -->
 <div id="noticeContent" style="display:none;"></div>
 <div id="calendar" class="calendar"></div>
+ <div id="popup"></div>
 <!-- ✅ ✅ CDN 정상 (이것만 남김) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -292,66 +293,64 @@ function downloadPDF(){
 /* 주차 팝업 */
 function showWeekSummary(start,el){
 
- let check="", leave="", half="", etc="";
+  let check="", leave="", half="", etc="";
 
- for(let i=0;i<7;i++){
-  let d=new Date(start);
-  d.setDate(start.getDate()+i);
+  for(let i=0;i<7;i++){
+    let d=new Date(start);
+    d.setDate(start.getDate()+i);
 
-  let full=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  let short=full.substring(5);
+    let full=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    let short=full.substring(5);
 
-  let list=events.filter(e=>e.date===full);
+    let list=events.filter(e=>e.date===full);
 
-  list.forEach(e=>{
-    let t=e.text;
+    list.forEach(e=>{
+      let t=e.text;
 
-    if(t.includes("검수")){
-      check+=`<div>• ${short} ${t}</div>`;
-    }
-    else if(t.includes("연차")){
-      let name=t.replace("연차","").split("/")[0];
-      leave+=`<div>• ${short} ${name}</div>`;
-    }
-    else if(t.includes("반차")){
-      let name=t.replace("반차","").split("/")[0];
-      half+=`<div>• ${short} ${name}</div>`;
-    }
-    else{
-      etc+=`<div>• ${short} ${t}</div>`;
-    }
-  });
- }
+      if(t.includes("검수")){
+        check+=`<div>• ${short} ${t}</div>`;
+      }
+      else if(t.includes("연차")){
+        let name=t.replace("연차","").split("/")[0];
+        leave+=`<div>• ${short} ${name}</div>`;
+      }
+      else if(t.includes("반차")){
+        let name=t.replace("반차","").split("/")[0];
+        half+=`<div>• ${short} ${name}</div>`;
+      }
+      else{
+        etc+=`<div>• ${short} ${t}</div>`;
+      }
+    });
+  }
 
- popup.style.display="block";
- popupDate.innerText=getWeekNumber(start)+"주 요약";
+  popup.style.display = "block";
 
- popupContent.innerHTML=`
+  popup.innerHTML = `
+    <div class="summary-card card-check">
+      <div class="card-title">검수</div>
+      ${check || "없음"}
+    </div>
 
- <div class="summary-card card-check">
-   <div class="card-title">검수</div>
-   ${check || "없음"}
- </div>
+    <div class="summary-card card-leave">
+      <div class="card-title">연차</div>
+      ${leave || "없음"}
+    </div>
 
- <div class="summary-card card-leave">
-   <div class="card-title">연차</div>
-   ${leave || "없음"}
- </div>
+    <div class="summary-card card-half">
+      <div class="card-title">반차</div>
+      ${half || "없음"}
+    </div>
 
- <div class="summary-card card-half">
-   <div class="card-title">반차</div>
-   ${half || "없음"}
- </div>
+    <div class="summary-card card-etc">
+      <div class="card-title">기타</div>
+      ${etc || "없음"}
+    </div>
+  `;
 
- <div class="summary-card card-etc">
-   <div class="card-title">기타</div>
-   ${etc || "없음"}
- </div>
- `;
-
- let r=el.getBoundingClientRect();
- popup.style.top=(window.scrollY+r.top)+"px";
- popup.style.left=(window.scrollX+r.right+10)+"px";
+  let r=el.getBoundingClientRect();
+  popup.style.top=(window.scrollY+r.top)+"px";
+  popup.style.left=(window.scrollX+r.right+10)+"px";
 }
 /* ESC */
 document.addEventListener("keydown",e=>{
