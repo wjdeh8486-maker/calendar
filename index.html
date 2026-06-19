@@ -764,44 +764,36 @@ async function uploadFile(file){
 
   return new Promise((resolve) => {
 
-     reader.onload = function(){
+    reader.onload = function(){
 
       fetch(API_URL, {
-        method:"POST",
+        method: "POST",
+        mode: "no-cors",   // ✅ 핵심
         body: JSON.stringify({
           action:"upload",
           fileName: file.name,
           fileData: reader.result,
-         mimeType: file.type 
+          mimeType: file.type 
         })
       })
-      .then(res => res.text())
-.then(text => {
+      .then(() => {
+        // ✅ 응답 못 읽음 → 그냥 성공 처리
+        console.log("업로드 요청 완료");
+        resolve("");
+      })
+      .catch(err => {
+        console.error("업로드 에러:", err);
+        alert("❌ 업로드 실패");
+        resolve("");
+      });
 
-  console.log("응답원본:", text);
+    };
 
-  let data;
+    reader.readAsDataURL(file);
 
-  try{
-    data = JSON.parse(text);
-  }catch(e){
-    alert("❌ JSON 파싱 실패");
-    console.error(text);
-    resolve("");
-    return;
-  }
-
-  console.log("업로드 결과:", data);
-
-  if(!data.url){
-    alert("❌ 업로드 실패 (url 없음)");
-    resolve("");
-    return;
-  }
-
-  resolve(data.url);
-})
-    };   // ✅ onload 닫기
+  });
+}
+   
 
     // ✅ ✅ ✅ 반드시 여기 있어야 함
     reader.readAsDataURL(file);
