@@ -590,13 +590,13 @@ function addEvent(){
 
   fetch(API_URL, {
     method: "POST",
+   mode: "no-cors",
     body: JSON.stringify({
       action: "add",
       date: date,
       text: text
     })
   })
-  .then(res => res.json())
   .then(() => {
     alert("저장 완료 ✅");
     loadData();
@@ -615,6 +615,7 @@ function deleteEvent(id){
 
   fetch(API_URL, {
     method: "POST",
+   mode: "no-cors",
     body: JSON.stringify({
       action:"delete",
       id:id
@@ -668,6 +669,7 @@ function submitEvent(){
 
   fetch(API_URL, {
     method: "POST",
+   mode: "no-cors",
     body: JSON.stringify({
       action: "add",
       date: date,
@@ -806,6 +808,7 @@ function deleteFromPopup(){
 
   fetch(API_URL, {
     method: "POST",
+   mode: "no-cors",
     body: JSON.stringify({
       action:"delete",
       id:id
@@ -830,6 +833,7 @@ function moveEventFromPopup(){
 
   fetch(API_URL, {
     method:"POST",
+   mode: "no-cors",
     body: JSON.stringify({
       action:"update",
       id:id,
