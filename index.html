@@ -202,8 +202,8 @@ const summaryTable = document.getElementById("summaryTable");
 const calendar = document.getElementById("calendar");
 const title = document.getElementById("title");
 const popup = document.getElementById("popup");
-const popupDate = document.getElementById("popupDate");
-const popupContent = document.getElementById("popupContent");
+// const popupDate = document.getElementById("popupDate");
+// const popupContent = document.getElementById("popupContent");
 
 /* ✅추가 (오늘 날짜 출력 함수) */
 function renderToday(){
@@ -764,13 +764,8 @@ async function uploadFile(file){
   const reader = new FileReader();
 
   return new Promise((resolve) => {
-async function uploadFile(file){
 
-  const reader = new FileReader();
-
-  return new Promise((resolve) => {
-
-    reader.onload = function(){
+     reader.onload = function(){
 
       fetch(API_URL, {
         method:"POST",
