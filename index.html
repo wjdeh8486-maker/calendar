@@ -771,7 +771,8 @@ async function uploadFile(file){
         body: JSON.stringify({
           action:"upload",
           fileName: file.name,
-          fileData: reader.result
+          fileData: reader.result,
+         mimeType: file.type 
         })
       })
       .then(res=>res.json())
