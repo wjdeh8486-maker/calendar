@@ -386,13 +386,11 @@ function parseCSV(text){
     cols.push(current);
 
     return {
-      id: cols[0],
-      date: cols[1],
-      text: cols[2],
-      fileUrl: cols[3] || ""
-    };
-
-  });
+  id: cols[0].trim(),
+  date: cols[1].trim(),
+  text: cols[2].trim(),
+  fileUrl: (cols[3] || "").trim()
+};
 }
 let events=[],currentYear,currentMonth;
 
