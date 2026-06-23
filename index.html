@@ -220,25 +220,8 @@ function renderNotice(){
 
   let key = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-00`;
 
-  let list = events.filter(e => {
-
-    // ✅ 공지 데이터는 이미 -00 형태
-    if(typeof e.date === "string" && e.date.includes("-00")){
-      return e.date === key;
-    }
-
-    // ✅ 일반 날짜 → 변환
-    let d = new Date(e.date);
-
-    if(isNaN(d)) return false; // 안전장치
-
-    let y = d.getFullYear();
-    let m = String(d.getMonth()+1).padStart(2,'0');
-
-    let formatted = `${y}-${m}-00`;
-
-    return formatted === key;
-  });
+  // ✅ 공지만 필터 (핵심)
+  let list = events.filter(e => e.date === key);
 
   const noticeContent = document.getElementById("noticeContent");
 
