@@ -557,7 +557,6 @@ function prevMonth(){currentMonth--;if(currentMonth<0){currentMonth=11;currentYe
 function nextMonth(){currentMonth++;if(currentMonth>11){currentMonth=0;currentYear++;}renderCalendar();}
 
 const API_URL = "https://script.google.com/macros/s/AKfycbxtfU9XtJAMBbTEAQpuBjRiH9A38-GRtjUQY2kUPZUAqwTD5DwjhIwXNW-ZcwbS76rLFg/exec";
-
 function addNotice(){
   let text = prompt("공지 내용 입력");
   if(!text) return;
@@ -566,19 +565,20 @@ function addNotice(){
 
   fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+   headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({
       action: "add",
       date: date,
       text: text
     })
   })
-  .then(res => res.json())
-  .then(() => {
+  .then(()=>{
     alert("공지 등록 ✅");
     loadData();
   })
-  .catch(()=> alert("실패 ❌"));
+  .catch(()=>{
+    alert("실패 ❌");
+  });
 }
 
 
@@ -591,14 +591,13 @@ function addEvent(){
 
   fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+  headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({
       action: "add",
       date: date,
       text: text
     })
   })
-  .then(res => res.json())   // ✅ 핵심 추가
   .then(() => {
     alert("저장 완료 ✅");
     loadData();
@@ -610,22 +609,20 @@ function addEvent(){
 }
 
 
-
 // ✅ ✅ ✅ 여기부터 추가 (중요)
 function deleteEvent(id){
 
   if(!confirm("삭제하시겠습니까?")) return;
 
- fetch(API_URL, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
+  fetch(API_URL, {
+    method: "POST",
+  headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({
       action:"delete",
       id:id
     })
   })
- .then(res => res.json())
-.then(()=> loadData());
+  .then(()=> loadData());
 }
 
 function updateEvent(id, oldDate, oldText){
@@ -639,17 +636,16 @@ function updateEvent(id, oldDate, oldText){
   if(!text) return;
 
   fetch(API_URL, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
+    method: "POST",
+   headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({
       action:"update",
       id:id,
       date:date,
       text:text
     })
   })
-  .then(res => res.json())
-.then(()=> loadData());
+  .then(()=> loadData());
 }
 
  function openAddPopup(){
@@ -675,21 +671,19 @@ function submitEvent(){
 
   fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({
       action: "add",
       date: date,
       text: text
     })
   })
-  .then(res => res.json())
   .then(()=>{
     alert("저장 완료 ✅");
     closeAddPopup();
     loadData();
   });
 }
-
 
 // ✅ 관리 팝업 열기
 function openManagePopup(id, date, text){
@@ -718,32 +712,46 @@ async function saveEvent(){
   let text = document.getElementById("manageText").value;
   let file = document.getElementById("manageFile").files[0];
 
-  let fileUrl = "";
+console.log("파일 확인:", file);   // ✅ 추가
 
-  if(file && file.size > 10 * 1024 * 1024){
-    alert("파일은 10MB 이하만 가능합니다");
-    return;
-  }
+let fileUrl = "";
 
+// ✅ 파일 있을 때만 체크
+if(file && file.size > 10 * 1024 * 1024){
+  alert("파일은 10MB 이하만 가능합니다");
+  return;
+}
+
+  // ✅ ① 기존 파일 URL 먼저 구함
   let existingUrl = "";
   let event = events.find(e => e.id == id);
-  if(event) existingUrl = event.fileUrl || "";
-
-  try {
-    if(file){
-      fileUrl = await uploadFile(file);
-    }
-  } catch(e){
-    alert("파일 업로드 실패");
-    return;
+  if(event){
+    existingUrl = event.fileUrl || "";
   }
 
+  // ✅ ② 새 파일 업로드
+ try {
+
+  if(file){
+    fileUrl = await uploadFile(file);
+  }
+
+} catch(e){
+  console.error("upload 중 오류:", e);
+  alert("파일 업로드 중 오류 발생");
+  return;
+}
+
+
+  // ✅ ③ 최종 결정 (여기가 핵심)
   let finalFileUrl = fileUrl || existingUrl;
 
-  fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+ 
+fetch(API_URL, {
+  method: "POST",
+  headers: { "Content-Type": "text/plain;charset=utf-8" },
+  body: JSON.stringify({
+
       action: "update",
       id: id,
       date: date,
@@ -751,29 +759,30 @@ async function saveEvent(){
       fileUrl: finalFileUrl
     })
   })
-  .then(res => res.json())
-  .then(()=>{
-    alert("수정 완료 ✅");
-    closeManagePopup();
-    loadData();
+ .then(()=>{
+  alert("수정 완료 ✅");
+  closeManagePopup();
 
-    // ✅ 정상 위치
-    setTimeout(() => {
-      loadData();
-    }, 2000);
-  });
+  // ✅ 바로 한번
+  loadData();
+
+  // ✅ ✅ 2초 뒤 한번 더 (핵심)
+  setTimeout(() => {
+    loadData();
+  }, 2000);
+});
 }
 async function uploadFile(file){
 
   const reader = new FileReader();
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
 
     reader.onload = function(){
 
       fetch(API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+       headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
           action:"upload",
           fileName: file.name,
@@ -781,20 +790,23 @@ async function uploadFile(file){
           mimeType: file.type 
         })
       })
-      .then(res => res.json())
-      .then(data => {
-        console.log("업로드 결과:", data);
-        resolve(data.fileUrl || ""); // ✅ 핵심
+      .then(() => {
+        console.log("업로드 완료");
+        resolve("");
       })
       .catch(err => {
-        console.error(err);
-        reject(err);
+        console.error("업로드 에러:", err);
+        alert("❌ 업로드 실패");
+        resolve("");
       });
+
     };
 
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(file);   // ✅ 이건 딱 1번만
+
   });
 }
+
     
 // ✅ 삭제
 function deleteFromPopup(){
@@ -805,13 +817,12 @@ function deleteFromPopup(){
 
   fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+ headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({
       action:"delete",
       id:id
     })
   })
-  .then(res => res.json())
   .then(()=>{
     alert("삭제 완료 ✅");
     closeManagePopup();
@@ -831,7 +842,7 @@ function moveEventFromPopup(){
 
   fetch(API_URL, {
     method:"POST",
-    headers: { "Content-Type": "application/json" },
+   headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({
       action:"update",
       id:id,
@@ -839,7 +850,6 @@ function moveEventFromPopup(){
       text:text
     })
   })
-  .then(res => res.json())
   .then(()=>{
     alert("이동 완료 ✅");
     closeManagePopup();
