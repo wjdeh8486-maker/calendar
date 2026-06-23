@@ -400,11 +400,18 @@ function loadData(){
 const sheetURL = "https://docs.google.com/spreadsheets/d/1hsNN3oN44MHrefPEemccNcI63xNOUJJ8eN8Xr87LkhI/export?format=csv&gid=0&v=" + new Date().getTime();
 
  fetch(sheetURL)
- .then(r => r.text())
- .then(t => {
+.then(r => r.text())
+.then(t => {
+
+  console.log("CSV 원본:", t.substring(0, 200)); // ✅ 추가
+
   events = parseCSV(t);
+
+  console.log("events:", events); // ✅ 추가
+
   renderCalendar();
- })
+})
+
  .catch(e => {
   console.error("시트 로드 실패:", e);
   renderCalendar();
