@@ -842,7 +842,7 @@ function moveEventFromPopup(){
 
   fetch(API_URL, {
     method:"POST",
-   headers: { "Content-Type": "text/plain;charset=utf-8" },
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({
       action:"update",
       id:id,
@@ -851,9 +851,18 @@ function moveEventFromPopup(){
     })
   })
   .then(()=>{
+
     alert("이동 완료 ✅");
     closeManagePopup();
+
+    // ✅ 바로 반영
     loadData();
+
+    // ✅ ✅ 2초 뒤 다시 (핵심)
+    setTimeout(()=>{
+      loadData();
+    }, 2000);
+
   });
 }
 // ✅ 바깥 클릭 시 닫기 (최종 완성 버전)
