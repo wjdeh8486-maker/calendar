@@ -782,7 +782,7 @@ async function uploadFile(file){
 
       fetch(API_URL, {
         method: "POST",
-       headers: { "Content-Type": "text/plain;charset=utf-8" },
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
           action:"upload",
           fileName: file.name,
@@ -790,20 +790,19 @@ async function uploadFile(file){
           mimeType: file.type 
         })
       })
-      .then(() => {
-        console.log("업로드 완료");
-        resolve("");
+      .then(res => res.json())   // ✅ 추가
+      .then(data => {
+        console.log("파일 URL:", data.fileUrl);  // ✅ 확인
+        resolve(data.fileUrl);                  // ✅ 핵심!!
       })
       .catch(err => {
         console.error("업로드 에러:", err);
-        alert("❌ 업로드 실패");
         resolve("");
       });
 
     };
 
-    reader.readAsDataURL(file);   // ✅ 이건 딱 1번만
-
+    reader.readAsDataURL(file);
   });
 }
 
