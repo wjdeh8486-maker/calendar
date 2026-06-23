@@ -525,13 +525,23 @@ let safeText = encodeURIComponent(t);  //✅ 핵심
 // ✅ ✅ 파일 링크 생성 (여기 추가)
 let fileLink = "";
 if(e.fileUrl){
+
+  let viewUrl = e.fileUrl;
+
+  // ✅ 다운로드 링크 → 보기 링크 변환
+  if(viewUrl.includes("uc?export=download")){
+    let id = viewUrl.split("id=")[1];
+    viewUrl = `https://drive.google.com/file/d/${id}/view`;
+  }
+
   fileLink = `
-    <a href="${e.fileUrl}" target="_blank"
+    <a href="${viewUrl}" target="_blank"
        onclick="event.stopPropagation()"
        style="margin-left:4px;text-decoration:none;">
        📄
     </a>`;
 }
+
   // ✅ 이동 이벤트 추가 (핵심)
 let move = `onclick="openManagePopup('${e.id}','${full}','${safeText}')" style="cursor:pointer;"`;
 
