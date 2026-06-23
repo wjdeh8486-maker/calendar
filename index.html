@@ -217,13 +217,35 @@ function renderToday(){
 
 /* 공지 */
 function renderNotice(){
- let key=`${currentYear}-${String(currentMonth+1).padStart(2,'0')}-00`;
- let list=events.filter(e=>e.date===key);
-const noticeContent = document.getElementById("noticeContent"); // ✅ 이 줄 추가
- noticeContent.innerHTML=list.map(e=>{
-  let t=e.text.replace(/\r/g,'').replace(/\n/g,"<br>");
-  return `<div>• ${t}</div>`;
- }).join("");
+
+  let key = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-00`;
+
+  let list = events.filter(e => {
+
+    // ✅ 공지 데이터는 이미 -00 형태
+    if(typeof e.date === "string" && e.date.includes("-00")){
+      return e.date === key;
+    }
+
+    // ✅ 일반 날짜 → 변환
+    let d = new Date(e.date);
+
+    if(isNaN(d)) return false; // 안전장치
+
+    let y = d.getFullYear();
+    let m = String(d.getMonth()+1).padStart(2,'0');
+
+    let formatted = `${y}-${m}-00`;
+
+    return formatted === key;
+  });
+
+  const noticeContent = document.getElementById("noticeContent");
+
+  noticeContent.innerHTML = list.map(e=>{
+    let t = e.text.replace(/\r/g,'').replace(/\n/g,"<br>");
+    return `<div>• ${t}</div>`;
+  }).join("");
 }
 
 /* 색상 */
@@ -394,32 +416,20 @@ function parseCSV(text){
 });
 }
 let events=[],currentYear,currentMonth;
-
 function loadData(){
 
-const sheetURL = "https://docs.google.com/spreadsheets/d/1hsNN3oN44MHrefPEemccNcI63xNOUJJ8eN8Xr87LkhI/export?format=csv&gid=0&v=" + new Date().getTime();
+  fetch(API_URL)
+  .then(res => res.json())
+  .then(data => {
 
- fetch(sheetURL)
- .then(r => r.text())
- .then(t => {
+    console.log("받은 데이터:", data);
 
-  console.log("===== RAW DATA =====");
-  console.log(t.substring(0,200));   // ✅ 이것
-
-  events = parseCSV(t);
-
-  console.log("===== EVENTS =====");
-  console.log(events.slice(0,5));   // ✅ 이것
-
-  renderCalendar();
- })
-}
-
-
- .catch(e => {
-  console.error("시트 로드 실패:", e);
-  renderCalendar();
- });
+    events = data;
+    renderCalendar();
+  })
+  .catch(err => {
+    console.error("로드 실패:", err);
+  });
 
 }
 
@@ -496,7 +506,18 @@ function renderCalendar(){
    }
 
    let full=`${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
-   let dayEvents=events.filter(e=>e.date===full);
+   let dayEvents = events.filter(e => {
+
+  let d = new Date(e.date);
+
+  let y = d.getFullYear();
+  let m = String(d.getMonth()+1).padStart(2,'0');
+  let day = String(d.getDate()).padStart(2,'0');
+
+  let formatted = `${y}-${m}-${day}`;
+
+  return formatted === full;
+});
 
    let cell=document.createElement("div");
    cell.className="cell";
