@@ -361,26 +361,39 @@ function closePopup(){popup.style.display="none";}
 
 /* CSV */
 function parseCSV(text){
- let lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+  let rows = text.split(/\r?\n/).filter(r => r.trim() !== "");
+  
+  return rows.slice(1).map(row => {
 
- return lines.slice(1).map(line => {
-  let parts = line.split(",");
+    let cols = [];
+    let current = "";
+    let insideQuotes = false;
 
-  if(parts.length < 3) return null;
+    for(let i=0;i<row.length;i++){
+      let char = row[i];
 
+      if(char === '"'){
+        insideQuotes = !insideQuotes;
+      } 
+      else if(char === "," && !insideQuotes){
+        cols.push(current);
+        current = "";
+      } 
+      else{
+        current += char;
+      }
+    }
+    cols.push(current);
 
+    return {
+      id: cols[0],
+      date: cols[1],
+      text: cols[2],
+      fileUrl: cols[3] || ""
+    };
 
-return {
-  id: parts[0],
-  date: parts[1],
-  text: parts[2],
-  fileUrl: parts[3] || ""
-};
-
- 
- }).filter(Boolean);
+  });
 }
-
 let events=[],currentYear,currentMonth;
 
 function loadData(){
