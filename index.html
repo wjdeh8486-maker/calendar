@@ -401,7 +401,7 @@ function parseCSV(text){
 let events = [];
 let eventMap = {};   // ✅ 추가 (핵심)
 let currentYear, currentMonth;
- 
+let isLoading = false; 
 // ✅✅✅ 여기 추가
 function buildEventMap(){
   eventMap = {};
@@ -415,6 +415,9 @@ function buildEventMap(){
 }
 function loadData(){
 
+if(isLoading) return;   // ✅ 추가
+  isLoading = true;
+
   // ✅ 로딩 표시
   calendar.innerHTML = `
     <div style="grid-column:1/9;text-align:center;font-size:20px;">
@@ -422,7 +425,7 @@ function loadData(){
     </div>
   `;
 
-  fetch(API_URL)
+  fetch(`${API_URL}?year=${currentYear}&month=${currentMonth+1}`)
   .then(res => res.json())
   .then(data => {
 
@@ -434,9 +437,13 @@ function loadData(){
     buildEventMap();
     renderCalendar();   // ✅ 딱 1번만 실행
   })
-  .catch(err => {
-    console.error("로드 실패:", err);
-  });
+.catch(err => {
+  console.error("로드 실패:", err);
+})
+.finally(() => {
+  isLoading = false;   // ✅ 이거 반드시 필요
+});
+
 }
 
 /* ✅ window.onload 부분 (추가됨) */
@@ -526,7 +533,7 @@ function renderCalendar(){
    });
 
    let dc=isHoliday?"holiday-date":(j===0?"sun":(j===6?"sat":""));
-   cell.innerHTML=`<b class="${dc}">${date}</b>`;
+   let html = `<b class="${dc}">${date}</b>`;
 
    let ins="",leave="",half="";
 
@@ -579,15 +586,15 @@ half += `<span ${move}>
 
   }
   else{
-    cell.innerHTML += `<div ${move}>
+    html += `<div ${move}>
       • ${t} ${fileLink}
     </div>`;
   }
 });
-
-   if(ins) cell.innerHTML+=`<div class="category"><b>검수</b>${ins}</div>`;
-   if(leave) cell.innerHTML+=`<div class="category leave"><b>연차</b><br>${leave}</div>`;
-   if(half) cell.innerHTML+=`<div class="category half"><b>반차</b><br>${half}</div>`;
+if(ins) html += `<div class="category"><b>검수</b>${ins}</div>`;
+if(leave) html += `<div class="category leave"><b>연차</b><br>${leave}</div>`;
+if(half) html += `<div class="category half"><b>반차</b><br>${half}</div>`;
+cell.innerHTML = html;
 
    calendar.appendChild(cell);
    date++;
