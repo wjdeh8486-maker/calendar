@@ -413,37 +413,58 @@ function buildEventMap(){
     eventMap[e.date].push(e);
   });
 }
-function loadData(){
+function loadData(force=false){
 
-if(isLoading) return;   // ✅ 추가
+  if(isLoading) return;
   isLoading = true;
 
-  // ✅ 로딩 표시
+  const CACHE_KEY = "calendar_events";
+  const CACHE_TIME_KEY = "calendar_events_time";
+
+  let now = Date.now();
+  let cacheTime = localStorage.getItem(CACHE_TIME_KEY);
+
+  // ✅ 캐시 우선 사용 (5분)
+  if(!force && cacheTime && (now - cacheTime < 5 * 60 * 1000)){
+
+    let cached = localStorage.getItem(CACHE_KEY);
+
+    if(cached){
+      events = JSON.parse(cached);
+
+      buildEventMap();
+      renderCalendar();
+
+      isLoading = false;
+      return;
+    }
+  }
+
+  // ✅ 서버 호출 (전체 데이터)
   calendar.innerHTML = `
     <div style="grid-column:1/9;text-align:center;font-size:20px;">
       ⏳ 로딩중...
     </div>
   `;
 
-  fetch(`${API_URL}?year=${currentYear}&month=${currentMonth+1}`)
+  fetch(API_URL)
   .then(res => res.json())
   .then(data => {
 
     events = data;
 
-    // ✅ 캐시는 저장만 (렌더에는 사용 안함)
-    localStorage.setItem("events", JSON.stringify(data));
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    localStorage.setItem(CACHE_TIME_KEY, Date.now());
 
     buildEventMap();
-    renderCalendar();   // ✅ 딱 1번만 실행
+    renderCalendar();
   })
-.catch(err => {
-  console.error("로드 실패:", err);
-})
-.finally(() => {
-  isLoading = false;   // ✅ 이거 반드시 필요
-});
-
+  .catch(err => {
+    console.error("로드 실패:", err);
+  })
+  .finally(()=>{
+    isLoading = false;
+  });
 }
 
 /* ✅ window.onload 부분 (추가됨) */
@@ -454,7 +475,7 @@ window.onload=function(){
  loadData();
 
  renderToday(); // ✅추가 (이게 핵심)
- setInterval(loadData, 300000);
+ setInterval(()=>loadData(true), 300000);
 };
 
 function toggleNotice(){
