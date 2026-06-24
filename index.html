@@ -403,43 +403,36 @@ let eventMap = {};   // ✅ 추가 (핵심)
 let currentYear, currentMonth;
 function loadData(){
 
-  // ✅ 로딩 UI 먼저 보여주기
-  calendar.innerHTML = `
-    <div style="grid-column:1/9;text-align:center;font-size:20px;">
-      ⏳ 로딩중...
-    </div>
-  `;
+  // ✅ 1. 캐시 먼저 보여주기 (핵심🔥)
+  let cached = localStorage.getItem("events");
 
+  if(cached){
+    events = JSON.parse(cached);
+    buildEventMap();
+    renderCalendar();
+  } else {
+    calendar.innerHTML = `
+      <div style="grid-column:1/9;text-align:center;font-size:20px;">
+        ⏳ 로딩중...
+      </div>
+    `;
+  }
+
+  // ✅ 2. 서버에서 최신 데이터 가져오기
   fetch(API_URL)
   .then(res => res.json())
   .then(data => {
 
     events = data;
 
-    // ✅ ✅ 초고속 핵심 (여기 중요)
-    eventMap = {};
+    // ✅ 캐시 저장
+    localStorage.setItem("events", JSON.stringify(data));
 
-    events.forEach(e => {
-
-      let d = new Date(e.date);
-
-      let key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-
-      if(!eventMap[key]) eventMap[key] = [];
-      eventMap[key].push(e);
-    });
-
+    buildEventMap();
     renderCalendar();
   })
   .catch(err => {
-
     console.error("로드 실패:", err);
-
-    calendar.innerHTML = `
-      <div style="grid-column:1/9;text-align:center;color:red;">
-        ❌ 데이터 로드 실패
-      </div>
-    `;
   });
 }
 
