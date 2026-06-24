@@ -398,22 +398,49 @@ function parseCSV(text){
 };
 });
 }
-let events=[],currentYear,currentMonth;
+let events = [];
+let eventMap = {};   // ✅ 추가 (핵심)
+let currentYear, currentMonth;
 function loadData(){
+
+  // ✅ 로딩 UI 먼저 보여주기
+  calendar.innerHTML = `
+    <div style="grid-column:1/9;text-align:center;font-size:20px;">
+      ⏳ 로딩중...
+    </div>
+  `;
 
   fetch(API_URL)
   .then(res => res.json())
   .then(data => {
 
-    console.log("받은 데이터:", data);
-
     events = data;
+
+    // ✅ ✅ 초고속 핵심 (여기 중요)
+    eventMap = {};
+
+    events.forEach(e => {
+
+      let d = new Date(e.date);
+
+      let key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+      if(!eventMap[key]) eventMap[key] = [];
+      eventMap[key].push(e);
+    });
+
     renderCalendar();
   })
   .catch(err => {
-    console.error("로드 실패:", err);
-  });
 
+    console.error("로드 실패:", err);
+
+    calendar.innerHTML = `
+      <div style="grid-column:1/9;text-align:center;color:red;">
+        ❌ 데이터 로드 실패
+      </div>
+    `;
+  });
 }
 
 /* ✅ window.onload 부분 (추가됨) */
@@ -424,7 +451,7 @@ window.onload=function(){
  loadData();
 
  renderToday(); // ✅추가 (이게 핵심)
- setInterval(loadData, 60000);
+ setInterval(loadData, 300000);
 };
 
 function toggleNotice(){
@@ -489,18 +516,7 @@ function renderCalendar(){
    }
 
    let full=`${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
-   let dayEvents = events.filter(e => {
-
-  let d = new Date(e.date);
-
-  let y = d.getFullYear();
-  let m = String(d.getMonth()+1).padStart(2,'0');
-  let day = String(d.getDate()).padStart(2,'0');
-
-  let formatted = `${y}-${m}-${day}`;
-
-  return formatted === full;
-});
+   let dayEvents = eventMap[full] || [];
 
    let cell=document.createElement("div");
    cell.className="cell";
