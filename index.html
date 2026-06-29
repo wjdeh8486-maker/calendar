@@ -262,19 +262,21 @@ function renderLegend(){
 /* 집계 */
 function renderSummary(){
  let key=`${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
- let ins=0,leave=0,half=0;
+ let ins=0,leave=0,half=0, issue=0;
 
  events.forEach(e=>{
   if(!e.date.startsWith(key)) return;
   if(e.text.includes("검수")) ins++;
   else if(e.text.includes("연차")) leave++;
   else if(e.text.includes("반차")) half++;
+  else if(e.text.includes("이슈")) issue++;
  });
 
  summaryTable.innerHTML=`
  <div class="summary-item" style="background:#2563eb">검수 ${ins}</div>
  <div class="summary-item" style="background:#16a34a">연차 ${leave}</div>
  <div class="summary-item" style="background:#eab308">반차 ${half}</div>
+ <div class="summary-item" style="background:#ef4444">이슈 ${issue}</div>
  `;
 }
 
@@ -298,7 +300,7 @@ function downloadPDF(){
 /* 주차 팝업 */
 function showWeekSummary(start,el){
 
-  let check="", leave="", half="", etc="";
+  let check="", leave="", half="", etc="", issue="";
 
   for(let i=0;i<7;i++){
     let d=new Date(start);
@@ -550,13 +552,13 @@ function renderCalendar(){
 
    let isHoliday = dayEvents.some(e=>{
      let t=e.text;
-     return !(t.includes("검수")||t.includes("연차")||t.includes("반차"));
+     return !(t.includes("검수")||t.includes("연차")||t.includes("반차")||t.includes("이슈"));
    });
 
    let dc=isHoliday?"holiday-date":(j===0?"sun":(j===6?"sat":""));
    let html = `<b class="${dc}">${date}</b>`;
 
-   let ins="",leave="",half="";
+   let ins="",leave="",half="", issue="";
 
 dayEvents.forEach(e=>{
   let t = e.text;
@@ -592,6 +594,11 @@ let move = `onclick="openManagePopup('${e.id}','${full}','${safeText}')" style="
       • ${t} ${fileLink}
     </div>`;
   }
+   else if(t.includes("이슈")){
+  issue += `<div ${move} style="background:#ef4444;color:white;">
+    • ${t.replace("이슈","")} ${fileLink}
+  </div>`;
+}
   else if(t.includes("연차")){
     
 leave += `<span ${move}>
@@ -615,6 +622,9 @@ half += `<span ${move}>
 if(ins) html += `<div class="category"><b>검수</b>${ins}</div>`;
 if(leave) html += `<div class="category leave"><b>연차</b><br>${leave}</div>`;
 if(half) html += `<div class="category half"><b>반차</b><br>${half}</div>`;
+if(issue) html += `<div class="category">
+<b style="color:#ef4444;">이슈</b>${issue}
+</div>`;   
 cell.innerHTML = html;
 
    calendar.appendChild(cell);
