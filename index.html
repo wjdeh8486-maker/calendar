@@ -262,7 +262,7 @@ function renderLegend(){
 /* 집계 */
 function renderSummary(){
  let key=`${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
- let ins=0,leave=0,half=0, issue=0;
+ let ins=0,leave=0,half=0, issue=0, delivery=0;
 
  events.forEach(e=>{
   if(!e.date.startsWith(key)) return;
@@ -270,6 +270,7 @@ function renderSummary(){
   else if(e.text.includes("연차")) leave++;
   else if(e.text.includes("반차")) half++;
   else if(e.text.includes("이슈")) issue++;
+  else if(e.text.includes("납기")) delivery++;
  });
 
  summaryTable.innerHTML=`
@@ -277,11 +278,13 @@ function renderSummary(){
  <div class="summary-item" style="background:#16a34a">연차 ${leave}</div>
  <div class="summary-item" style="background:#eab308">반차 ${half}</div>
  <div class="summary-item" style="background:#ef4444">이슈 ${issue}</div>
+ <div class="summary-item" style="background:#dc2626">납기 ${delivery}</div>
  `;
 }
 
 /* PDF */
 function downloadPDF(){
+ popup.style.display = "none";
  const { jsPDF } = window.jspdf;
  html2canvas(document.body).then(canvas=>{
   const img=canvas.toDataURL("image/png");
@@ -300,7 +303,7 @@ function downloadPDF(){
 /* 주차 팝업 */
 function showWeekSummary(start,el){
 
-  let check="", leave="", half="", etc="", issue="";
+  let check="", leave="", half="", etc="", issue="", delivery="";
 
   for(let i=0;i<7;i++){
     let d=new Date(start);
@@ -325,15 +328,24 @@ function showWeekSummary(start,el){
         let name=t.replace("반차","").split("/")[0];
         half+=`<div>• ${short} ${name}</div>`;
       }
-      else{
-        etc+=`<div>• ${short} ${t}</div>`;
-      }
+  else if(t.includes("납기")){
+    delivery += `<div>• ${short} ${t}</div>`;
+}
+else if(t.includes("이슈")){
+    issue += `<div>• ${short} ${t}</div>`;
+}
+else{
+    etc += `<div>• ${short} ${t}</div>`;
+}
     });
   }
 
   popup.style.display = "block";
 
   popup.innerHTML = `
+  <div style="text-align:right;margin-bottom:5px;">
+  <button onclick="closePopup()">✕</button>
+</div>
     <div class="summary-card card-check">
       <div class="card-title">검수</div>
       ${check || "없음"}
@@ -348,6 +360,16 @@ function showWeekSummary(start,el){
       <div class="card-title">반차</div>
       ${half || "없음"}
     </div>
+    <div class="summary-card"
+     style="background:#fee2e2;border-left:5px solid #ef4444;">
+  <div class="card-title">이슈</div>
+  ${issue || "없음"}
+</div>
+    <div class="summary-card"
+     style="background:#fee2e2;border-left:5px solid #dc2626;">
+  <div class="card-title">납기</div>
+  ${delivery || "없음"}
+</div>
 
     <div class="summary-card card-etc">
       <div class="card-title">기타</div>
@@ -357,7 +379,13 @@ function showWeekSummary(start,el){
 
   let r=el.getBoundingClientRect();
   popup.style.top=(window.scrollY+r.top)+"px";
-  popup.style.left=(window.scrollX+r.right+10)+"px";
+  let left = window.scrollX + r.right + 10;
+
+if(left + 340 > window.innerWidth){
+  left = window.scrollX + r.left - 340;
+}
+
+popup.style.left = left + "px";
 }
 /* ESC */
 document.addEventListener("keydown",e=>{
@@ -552,13 +580,21 @@ function renderCalendar(){
 
    let isHoliday = dayEvents.some(e=>{
      let t=e.text;
-     return !(t.includes("검수")||t.includes("연차")||t.includes("반차")||t.includes("이슈"));
+    
+ return !(
+    t.includes("검수") ||
+    t.includes("연차") ||
+    t.includes("반차") ||
+    t.includes("이슈") ||
+    t.includes("납기")
+  );
+
    });
 
    let dc=isHoliday?"holiday-date":(j===0?"sun":(j===6?"sat":""));
    let html = `<b class="${dc}">${date}</b>`;
 
-   let ins="",leave="",half="", issue="";
+   let ins="",leave="",half="", issue="", delivery="";
 
 dayEvents.forEach(e=>{
   let t = e.text;
@@ -594,6 +630,14 @@ let move = `onclick="openManagePopup('${e.id}','${full}','${safeText}')" style="
       • ${t} ${fileLink}
     </div>`;
   }
+   else if(t.includes("납기")){
+  delivery += `
+    <div ${move}
+         style="background:#dc2626;color:white;font-weight:bold;">
+      • ${t.replace("납기","")}
+      ${fileLink}
+    </div>`;
+}
    else if(t.includes("이슈")){
   issue += `<div ${move} style="background:#ef4444;color:white;">
     • ${t.replace("이슈","")} ${fileLink}
@@ -625,6 +669,11 @@ if(half) html += `<div class="category half"><b>반차</b><br>${half}</div>`;
 if(issue) html += `<div class="category">
 <b style="color:#ef4444;">이슈</b>${issue}
 </div>`;   
+if(delivery) html += `
+<div class="category">
+  <b style="color:#dc2626;">납기</b>
+  ${delivery}
+</div>`;   
 cell.innerHTML = html;
 
    calendar.appendChild(cell);
@@ -640,8 +689,33 @@ function getWeekNumber(d){
  return 1+Math.round(((d-y1)/86400000-3+(y1.getDay()+6)%7)/7);
 }
 
-function prevMonth(){currentMonth--;if(currentMonth<0){currentMonth=11;currentYear--;}renderCalendar();}
-function nextMonth(){currentMonth++;if(currentMonth>11){currentMonth=0;currentYear++;}renderCalendar();}
+function prevMonth(){
+
+  closePopup();
+
+  currentMonth--;
+
+  if(currentMonth<0){
+    currentMonth=11;
+    currentYear--;
+  }
+
+  renderCalendar();
+}
+
+function nextMonth(){
+
+  closePopup();
+
+  currentMonth++;
+
+  if(currentMonth>11){
+    currentMonth=0;
+    currentYear++;
+  }
+
+  renderCalendar();
+}
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwQfFAsBjvAr_xBQSvc5AwdqiwDK0sA3DmQy4zKfwTCE7VQQENWAkvIucGF9xvvikswxw/exec";
 function addNotice(){
@@ -962,6 +1036,14 @@ if(e.target === overlay){
   closeManagePopup();
   closeAddPopup();
 }
+ // ✅ 주차 팝업
+  if(
+    popup.style.display === "block" &&
+    !popup.contains(e.target) &&
+    !e.target.classList.contains("week-box")
+  ){
+    closePopup();
+  }
   // ✅ 관리 팝업
   if(
     managePopup.style.display === "block" &&
