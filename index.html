@@ -278,7 +278,7 @@ function renderSummary(){
  <div class="summary-item" style="background:#16a34a">연차 ${leave}</div>
  <div class="summary-item" style="background:#eab308">반차 ${half}</div>
  <div class="summary-item" style="background:#ef4444">이슈 ${issue}</div>
- <div class="summary-item" style="background:#dc2626">납기 ${delivery}</div>
+ <div class="summary-item" style="background:#2563eb">납기 ${delivery}</div>
  `;
 }
 
@@ -366,7 +366,7 @@ else{
   ${issue || "없음"}
 </div>
     <div class="summary-card"
-     style="background:#fee2e2;border-left:5px solid #dc2626;">
+ style="background:#dbeafe;border-left:5px solid #2563eb;">
   <div class="card-title">납기</div>
   ${delivery || "없음"}
 </div>
@@ -633,7 +633,7 @@ let move = `onclick="openManagePopup('${e.id}','${full}','${safeText}')" style="
    else if(t.includes("납기")){
   delivery += `
     <div ${move}
-         style="background:#dc2626;color:white;font-weight:bold;">
+         style="background:#2563eb;color:white;font-weight:bold;">
       • ${t.replace("납기","")}
       ${fileLink}
     </div>`;
@@ -671,7 +671,7 @@ if(issue) html += `<div class="category">
 </div>`;   
 if(delivery) html += `
 <div class="category">
-  <b style="color:#dc2626;">납기</b>
+ <b style="color:#2563eb;">납기</b>
   ${delivery}
 </div>`;   
 cell.innerHTML = html;
